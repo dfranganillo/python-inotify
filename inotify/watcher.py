@@ -69,6 +69,9 @@ class Event(object):
         self.mask = raw.mask
         self.cookie = raw.cookie
         self.name = raw.name
+
+    def __getstate__(self):
+        return self.raw
     
     def __repr__(self):
         r = repr(self.raw)
@@ -167,7 +170,7 @@ class Watcher(object):
         this watcher, return None.'''
 
         return self._wds.get(wd)
-        
+
     def read(self, bufsize=None):
         '''Read a list of queued inotify events.
 
@@ -270,6 +273,7 @@ class AutoWatcher(Watcher):
 
     __slots__ = (
         'addfilter',
+        'moved_from',
         )
 
     def __init__(self, addfilter=None):
@@ -286,8 +290,11 @@ class AutoWatcher(Watcher):
 
         super(AutoWatcher, self).__init__()
         self.addfilter = addfilter
+        self.moved_from = None
 
     _dir_create_mask = inotify.IN_ISDIR | inotify.IN_CREATE
+    _dir_moved_from = inotify.IN_ISDIR | inotify.IN_MOVED_FROM
+    _dir_moved_to = inotify.IN_ISDIR | inotify.IN_MOVED_TO
 
     def read(self, bufsize=None):
         events = super(AutoWatcher, self).read(bufsize)
@@ -302,7 +309,26 @@ class AutoWatcher(Watcher):
                     except OSError, err:
                         if err.errno not in self.ignored_errors:
                             raise
+            else:
+                if evt.mask & self._dir_moved_from == self._dir_moved_from:
+                    # a directory is changing its name
+                    self.moved_from = (evt.fullpath, evt.cookie)
+                else:
+                    if (self.moved_from) and evt.mask & self._dir_moved_to == self._dir_moved_to:
+                        # a directory changed already its name
+                        if (self.moved_from[1] == evt.cookie):
+                            # gotcha
+                            self.replace_name(self.moved_from[0], evt.fullpath)
+                            self.moved_from = None
         return events
+
+    def replace_name (self, oldpath, fullpath):
+        wd = self._paths[oldpath][0]
+        origp, mask = self._wds[wd]
+        self._wds[wd] = fullpath, mask
+        self._paths[fullpath] = wd, mask
+        del(self._paths[origp])
+
 
 
 class Threshold(object):
