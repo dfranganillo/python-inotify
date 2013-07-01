@@ -323,12 +323,25 @@ class AutoWatcher(Watcher):
         return events
 
     def replace_name (self, oldpath, fullpath):
-        wd = self._paths[oldpath][0]
-        origp, mask = self._wds[wd]
-        self._wds[wd] = fullpath, mask
-        self._paths[fullpath] = wd, mask
-        del(self._paths[origp])
 
+        for path in self._paths.keys():
+            # Search for directories below or in same path
+            if (path.startswith(oldpath)):
+
+                # Build new pathame
+                newpath = fullpath + path[len(oldpath):]
+
+                # Get original watch descriptor                 
+                wd, mask = self._paths[path]
+
+                # Save new watch&mask for path
+                self._wds[wd] = newpath, mask
+
+                # Save wd&mask for the new pathname
+                self._paths[newpath] = wd, mask
+
+                # Delete old key,value
+                del(self._paths[path])
 
 
 class Threshold(object):
