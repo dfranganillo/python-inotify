@@ -61,7 +61,7 @@ class Event(object):
         self.path = path
         self.raw = raw
         if raw.name:
-            self.fullpath = path + '/' + raw.name
+            self.fullpath = os.path.join(path, raw.name)
         else:
             self.fullpath = path
 
@@ -141,9 +141,12 @@ class Watcher(object):
 
         path = os.path.normpath(path)
         wd = inotify.add_watch(self.fd, path, mask)
-        self._paths[path] = wd, mask
-        self._wds[wd] = path, mask
-        return wd
+        if (wd <=0):
+            self._paths[path] = wd, mask
+            self._wds[wd] = path, mask
+            return wd
+        else:
+            return -1
 
     def remove(self, wd):
         '''Remove the given watch.'''
@@ -180,11 +183,14 @@ class Watcher(object):
 
         events = []
         for evt in inotify.read(self.fd, bufsize):
-            events.append(Event(evt, self._wds[evt.wd][0]))
-            if evt.mask & inotify.IN_IGNORED:
-                self._remove(evt.wd)
-            elif evt.mask & inotify.IN_UNMOUNT:
-                self.close()
+            try:
+                events.append(Event(evt, self._wds[evt.wd][0]))
+                if evt.mask & inotify.IN_IGNORED:
+                    self._remove(evt.wd)
+                elif evt.mask & inotify.IN_UNMOUNT:
+                    self.close()
+            except:
+                continue
         return events
 
     def close(self):
