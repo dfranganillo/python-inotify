@@ -58,17 +58,22 @@ class Event(object):
         )
 
     def __init__(self, raw, path):
+
+        if (isinstance(path, str)):
+            path = path.decode('utf-8')
+            
         self.path = path
         self.raw = raw
+
         if raw.name:
-            self.fullpath = os.path.join(path, raw.name)
+            self.fullpath = os.path.join(path, raw.name.decode('utf-8'))
         else:
             self.fullpath = path
 
         self.wd = raw.wd
         self.mask = raw.mask
         self.cookie = raw.cookie
-        self.name = raw.name
+        self.name = raw.name.decode('utf-8')
 
     def __getstate__(self):
         return self.raw
@@ -140,24 +145,29 @@ class Watcher(object):
         Return the watch descriptor added or modified.'''
 
         path = os.path.normpath(path)
-        wd = inotify.add_watch(self.fd, path, mask)
-        if (wd <=0):
+        wd = inotify.add_watch(self.fd, path.encode('utf-8'), mask)
+
+        if (wd >= 0):
             self._paths[path] = wd, mask
             self._wds[wd] = path, mask
             return wd
         else:
             return -1
 
+
     def remove(self, wd):
         '''Remove the given watch.'''
 
-        inotify.remove_watch(self.fd, wd)
         self._remove(wd)
+        inotify.remove_watch(self.fd, wd)
 
     def _remove(self, wd):
-        path_mask = self._wds.pop(wd, None)
-        if path_mask is not None:
-            self._paths.pop(path_mask[0])
+        try:
+            path_mask = self._wds[wd]
+            del(self._wds[wd])
+            del(self._paths[path_mask[0]])
+        except:
+            pass
 
     def path(self, path):
         '''Return a (watch descriptor, event mask) pair for the given path.
@@ -182,13 +192,14 @@ class Watcher(object):
         available.'''
 
         events = []
-        for evt in inotify.read(self.fd, bufsize):
+        for evt in inotify.read(self.fd, bufsize):            
             try:
-                events.append(Event(evt, self._wds[evt.wd][0]))
                 if evt.mask & inotify.IN_IGNORED:
                     self._remove(evt.wd)
                 elif evt.mask & inotify.IN_UNMOUNT:
                     self.close()
+                else:
+                    events.append(Event(evt, self._wds[evt.wd][0]))
             except:
                 continue
         return events
