@@ -543,6 +543,7 @@ PyObject *read_events(PyObject *self, PyObject *args)
 	if (PyList_Append(ret, obj) == -1)
 	    goto mybail;
 
+	Py_DECREF(obj);
 	pos += sizeof(struct inotify_event) + in->len;
 	continue;
 
