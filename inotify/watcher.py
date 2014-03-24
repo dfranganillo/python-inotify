@@ -19,7 +19,7 @@ available.
 The AutoWatcher class is more useful, as it automatically watches
 newly-created directories on your behalf.'''
 
-__author__ = "Bryan O'Sullivan <bos@serpentine.com>"
+__author__ = "Bryan O'Sullivan <bos@serpentine.com>, Daniel Franganillo <dfranganillo@gmail.com>"
 
 import _inotify as inotify
 import array
@@ -61,7 +61,7 @@ class Event(object):
 
         if (isinstance(path, str)):
             path = path.decode('utf-8')
-            
+
         self.path = path
         self.raw = raw
 
@@ -154,7 +154,6 @@ class Watcher(object):
         else:
             return -1
 
-
     def remove(self, wd):
         '''Remove the given watch.'''
 
@@ -171,7 +170,7 @@ class Watcher(object):
 
     def path(self, path):
         '''Return a (watch descriptor, event mask) pair for the given path.
-        
+
         If the path is not being watched, return None.'''
 
         return self._paths.get(path)
@@ -192,7 +191,7 @@ class Watcher(object):
         available.'''
 
         events = []
-        for evt in inotify.read(self.fd, bufsize):            
+        for evt in inotify.read(self.fd, bufsize):
             try:
                 if evt.mask & inotify.IN_IGNORED:
                     self._remove(evt.wd)
@@ -348,7 +347,7 @@ class AutoWatcher(Watcher):
                 # Build new pathame
                 newpath = fullpath + path[len(oldpath):]
 
-                # Get original watch descriptor                 
+                # Get original watch descriptor
                 wd, mask = self._paths[path]
 
                 # Save new watch&mask for path
