@@ -192,15 +192,12 @@ class Watcher(object):
 
         events = []
         for evt in inotify.read(self.fd, bufsize):
-            try:
-                if evt.mask & inotify.IN_IGNORED:
-                    self._remove(evt.wd)
-                elif evt.mask & inotify.IN_UNMOUNT:
-                    self.close()
-                else:
-                    events.append(Event(evt, self._wds[evt.wd][0]))
-            except:
-                continue
+            if evt.mask & inotify.IN_IGNORED:
+                self._remove(evt.wd)
+            elif evt.mask & inotify.IN_UNMOUNT:
+                self.close()
+            else:
+                events.append(Event(evt, self._wds[evt.wd][0]))
         return events
 
     def close(self):
