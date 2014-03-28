@@ -160,13 +160,13 @@ class Watcher(object):
         self._remove(wd)
         inotify.remove_watch(self.fd, wd)
 
-    def _remove(self, wd):
-        try:
+    def _remove(self, wd):        
+        if wd in self._wds:
             path_mask = self._wds[wd]
             del(self._wds[wd])
-            del(self._paths[path_mask[0]])
-        except:
-            pass
+            if path_mask[0] in self._paths:
+                del(self._paths[path_mask[0]])
+
 
     def path(self, path):
         '''Return a (watch descriptor, event mask) pair for the given path.
