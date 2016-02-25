@@ -67,17 +67,18 @@ class Event(object):
 
         if raw.name:
             self.fullpath = os.path.join(path, raw.name.decode('utf-8'))
+            self.name = raw.name.decode('utf-8')
         else:
             self.fullpath = path
+            self.name = None
 
         self.wd = raw.wd
         self.mask = raw.mask
         self.cookie = raw.cookie
-        self.name = raw.name.decode('utf-8')
 
     def __getstate__(self):
         return self.raw
-    
+
     def __repr__(self):
         r = repr(self.raw)
         return 'Event(path=' + repr(self.path) + ', ' + r[r.find('(')+1:]
@@ -160,7 +161,7 @@ class Watcher(object):
         self._remove(wd)
         inotify.remove_watch(self.fd, wd)
 
-    def _remove(self, wd):        
+    def _remove(self, wd):
         if wd in self._wds:
             path_mask = self._wds[wd]
             del(self._wds[wd])
