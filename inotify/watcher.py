@@ -70,7 +70,7 @@ class Event(object):
             self.name = raw.name.decode('utf-8')
         else:
             self.fullpath = path
-            self.name = None
+            self.name = ""
 
         self.wd = raw.wd
         self.mask = raw.mask
